@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Education Data AI Value Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --navy:#0B1F33; --blue:#155EEF; --cyan:#0EA5E9; --ink:#111827; --muted:#667085;
+      --bg:#F5F7FA; --card:#FFFFFF; --line:#E5E7EB; --green:#16A34A; --amber:#F59E0B; --red:#DC2626;
+      --purple:#7C3AED; --slate:#334155;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, Aptos, Segoe UI, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+    .app { display:grid; grid-template-columns: 300px 1fr; min-height:100vh; }
+    aside { background:var(--navy); color:white; padding:28px 22px; position:sticky; top:0; height:100vh; }
+    .brand { font-size:20px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+    .subbrand { color:#B9C7D6; margin-top:10px; font-size:13px; line-height:1.45; }
+    .nav { margin-top:28px; display:flex; flex-direction:column; gap:8px; }
+    .nav a { color:#D5E0EA; text-decoration:none; padding:10px 12px; border-radius:10px; font-size:13px; }
+    .nav a:hover { background:#143552; color:white; }
+    .mode { margin-top:26px; padding:14px; border:1px solid rgba(255,255,255,.16); border-radius:14px; background:rgba(255,255,255,.06); }
+    .mode-title { font-weight:700; font-size:13px; }
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; font-size:12px; color:#D5E0EA; }
+    .switch { position:relative; display:inline-block; width:46px; height:24px; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#475569; transition:.2s; border-radius:20px; }
+    .slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background:white; transition:.2s; border-radius:50%; }
+    input:checked + .slider { background:var(--green); }
+    input:checked + .slider:before { transform: translateX(22px); }
+    .button { border:0; background:var(--blue); color:white; padding:12px 14px; border-radius:12px; font-weight:700; cursor:pointer; width:100%; margin-top:14px; }
+    .button.secondary { background:#143552; border:1px solid rgba(255,255,255,.18); }
+    main { padding:30px; max-width:1440px; }
+    .hero { display:grid; grid-template-columns: 1.4fr .6fr; gap:18px; margin-bottom:20px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:0 8px 28px rgba(16,24,40,.05); }
+    h1 { font-size:30px; margin:0; letter-spacing:-.03em; color:var(--navy); }
+    h2 { font-size:18px; margin:0 0 14px; letter-spacing:-.02em; color:var(--navy); }
+    h3 { font-size:14px; margin:18px 0 10px; color:var(--slate); text-transform:uppercase; letter-spacing:.04em; }
+    .lead { color:var(--muted); margin-top:8px; line-height:1.55; }
+    .badge { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:6px 10px; font-size:12px; font-weight:700; background:#EAF2FF; color:#155EEF; margin-right:8px; }
+    .kpis { display:grid; grid-template-columns: repeat(5, 1fr); gap:14px; margin:18px 0; }
+    .kpi { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+    .kpi .label { color:var(--muted); font-size:12px; }
+    .kpi .value { font-size:26px; font-weight:800; margin-top:6px; color:var(--navy); letter-spacing:-.03em; }
+    .kpi .note { color:var(--muted); font-size:12px; margin-top:4px; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:18px; margin-bottom:18px; }
+    .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap:18px; margin-bottom:18px; }
+    .form-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input, select { width:100%; border:1px solid #D0D5DD; border-radius:10px; padding:10px 11px; font-size:13px; background:white; color:var(--ink); }
+    input:focus, select:focus { outline:2px solid #BBD5FF; border-color:var(--blue); }
+    .input-card { padding:12px; background:#FBFCFE; border:1px solid #EEF2F6; border-radius:12px; }
+    .hint { font-size:11px; color:var(--muted); margin-top:5px; }
+    .assumed { color:var(--amber); font-weight:700; }
+    .user { color:var(--green); font-weight:700; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { text-align:left; color:#475467; background:#F8FAFC; border-bottom:1px solid var(--line); padding:9px; font-weight:700; }
+    td { border-bottom:1px solid #EEF2F6; padding:9px; vertical-align:top; }
+    tr:last-child td { border-bottom:0; }
+    .bar-wrap { background:#EEF2F6; border-radius:99px; height:9px; overflow:hidden; }
+    .bar { height:9px; background:linear-gradient(90deg, var(--blue), var(--cyan)); border-radius:99px; }
+    .insight { border-left:4px solid var(--blue); background:#F0F6FF; padding:13px 14px; border-radius:12px; margin-top:10px; color:#1E3A5F; font-size:13px; line-height:1.45; }
+    .footer-note { color:var(--muted); font-size:12px; line-height:1.45; }
+    .waterfall { display:flex; align-items:flex-end; gap:12px; height:220px; padding-top:20px; }
+    .wf-item { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; }
+    .wf-bar { width:100%; border-radius:10px 10px 0 0; background:linear-gradient(180deg,#155EEF,#0EA5E9); min-height:14px; }
+    .wf-bar.cost { background:linear-gradient(180deg,#DC2626,#F97316); }
+    .wf-label { font-size:11px; color:var(--muted); text-align:center; margin-top:8px; min-height:34px; }
+    .wf-value { font-size:12px; font-weight:800; color:var(--navy); margin-bottom:5px; }
+    @media (max-width: 1100px) { .app{grid-template-columns:1fr;} aside{height:auto;position:relative;} .hero,.grid-2,.grid-3{grid-template-columns:1fr;} .kpis{grid-template-columns:1fr 1fr;} .form-grid{grid-template-columns:1fr 1fr;} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">Education Data AI<br/>Value Simulator</div>
+    <div class="subbrand">Opportunity-specific model to quantify AI-led productivity, business impact, and the human + AI agent operating model for education data engineering opportunities.</div>
+    <div class="nav">
+      <a href="#summary">Executive Summary</a>
+      <a href="#inputs">Input Console</a>
+      <a href="#staffing">Staffing Model</a>
+      <a href="#impact">AI Impact</a>
+      <a href="#horizon">Value Horizon</a>
+      <a href="#insights">Insights</a>
+    </div>
+    <div class="mode">
+      <div class="mode-title">Assumption Mode</div>
+      <div class="subbrand">When a field is blank, the simulator uses the default assumption and marks confidence accordingly.</div>
+      <div class="toggle-row"><span>Default ON</span><label class="switch"><input id="assumptionMode" type="checkbox" checked onchange="calculate()"><span class="slider"></span></label></div>
+      <button class="button" onclick="downloadExcel()">Download Excel Output</button>
+      <button class="button secondary" onclick="resetInputs()">Reset Inputs</button>
+    </div>
+  </aside>
+  <main>
+    <section class="hero" id="summary">
+      <div class="panel">
+        <div><span class="badge">Business Impact</span><span class="badge">Build + Run</span><span class="badge">Human + AI Agent Model</span></div>
+        <h1 style="margin-top:14px;">AI value case with productivity impact, operating model recommendations, and multi-year economics</h1>
+        <p class="lead">Use this model to quantify the business impact of adopting AI and GenAI tools across Build and Run phases. Enter what is known from the RFP or sales context; the model fills gaps through transparent assumptions and recommends how people and AI agents should work together to deliver the outcomes.</p>
+      </div>
+      <div class="panel">
+        <h2>Current Run Profile</h2>
+        <table>
+          <tr><td>Opportunity</td><td id="profileOpportunity">Sample Opportunity</td></tr>
+          <tr><td>Segment</td><td id="profileSegment">K-12</td></tr>
+          <tr><td>Scenario</td><td id="profileScenario">Realistic</td></tr>
+          <tr><td>Assumption dependency</td><td id="assumptionDependency">Medium</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi"><div class="label">1Y Net Savings</div><div class="value" id="kpi1y">$0</div><div class="note">Build + run, net of AI cost</div></div>
+      <div class="kpi"><div class="label">3Y Net Savings</div><div class="value" id="kpi3y">$0</div><div class="note">Cumulative value</div></div>
+      <div class="kpi"><div class="label">5Y Net Savings</div><div class="value" id="kpi5y">$0</div><div class="note">Cumulative value</div></div>
+      <div class="kpi"><div class="label">Build Effort Saved</div><div class="value" id="kpiBuildPct">0%</div><div class="note">One-time productivity</div></div>
+      <div class="kpi"><div class="label">Run Effort Saved</div><div class="value" id="kpiRunPct">0%</div><div class="note">Recurring monthly productivity</div></div>
+    </section>
+
+    <section class="panel" id="inputs">
+      <h2>1. Opportunity Input Console</h2>
+      <div class="form-grid">
+        <div class="input-card"><label>Opportunity Name</label><input id="opportunityName" placeholder="e.g., Statewide Education Data Platform" oninput="calculate()"><div class="hint">Optional; used in output file name</div></div>
+        <div class="input-card"><label>Education Segment</label><select id="segment" onchange="calculate()"><option>K-12 District</option><option>State Education Agency</option><option>Higher Education</option><option>University System</option><option>Workforce / Adjacent Education</option></select></div>
+        <div class="input-card"><label>Primary Scope</label><select id="scope" onchange="calculate()"><option>Data Lake / Platform</option><option>Data Quality</option><option>MDM</option><option>Data Governance</option><option>BI / Reporting</option><option>Integration / Interoperability</option><option>End-to-End Data Modernization</option></select></div>
+        <div class="input-card"><label>Scenario</label><select id="scenario" onchange="calculate()"><option>Conservative</option><option selected>Realistic</option><option>Aggressive</option></select></div>
+
+        <div class="input-card"><label>Source Systems</label><input id="sourceSystems" type="number" min="0" placeholder="Default: 6" oninput="calculate()"><div id="srcHint" class="hint"></div></div>
+        <div class="input-card"><label>Data Domains</label><input id="domains" type="number" min="0" placeholder="Default: 4" oninput="calculate()"><div id="domainHint" class="hint"></div></div>
+        <div class="input-card"><label>Pipelines / Integrations</label><input id="pipelines" type="number" min="0" placeholder="Default: sources × 3" oninput="calculate()"><div id="pipeHint" class="hint"></div></div>
+        <div class="input-card"><label>Reports / Dashboards</label><input id="dashboards" type="number" min="0" placeholder="Default: 12" oninput="calculate()"><div id="dashHint" class="hint"></div></div>
+
+        <div class="input-card"><label>Build Duration (months)</label><input id="buildMonths" type="number" min="1" placeholder="Default: 6" oninput="calculate()"><div id="buildHint" class="hint"></div></div>
+        <div class="input-card"><label>Run Duration Mode</label><select id="runMode" onchange="calculate()"><option>Annualized</option><option>Contract Term</option></select></div>
+        <div class="input-card"><label>Delivery Rate Model</label><select id="rateModel" onchange="syncRateModel(true)"><option value="Onshore">Onshore</option><option value="Offshore">Offshore</option><option value="Hybrid" selected>Hybrid</option><option value="Custom">Custom</option></select><div class="hint">Select the staffing commercial model</div></div>
+        <div class="input-card"><label>Hourly Rate ($)</label><input id="hourlyRate" type="number" min="0" placeholder="Default by model" oninput="setCustomRate(); calculate()"><div id="hourlyRateHint" class="hint"></div></div>
+        <div class="input-card"><label>Hours per Day</label><input id="hoursPerDay" type="number" min="1" max="24" placeholder="Default: 8" oninput="calculate()"><div id="hoursHint" class="hint"></div></div>
+        <div class="input-card"><label>Calculated Day Rate ($)</label><input id="dayRate" type="number" min="0" readonly><div id="rateHint" class="hint"></div></div>
+        <div class="input-card"><label>AI Enablement Cost / Year ($)</label><input id="aiCost" type="number" min="0" placeholder="Default: calculated" oninput="calculate()"><div id="aiHint" class="hint"></div></div>
+
+        <div class="input-card"><label>AI Maturity</label><select id="maturity" onchange="calculate()"><option value="0.6">L1 Pilot / Assisted</option><option value="0.95" selected>L2 Embedded</option><option value="1.1">L3 Orchestrated</option><option value="1.3">L4 Autonomous</option></select></div>
+        <div class="input-card"><label>Data Complexity</label><select id="complexity" onchange="calculate()"><option value="1.1">Low</option><option value="1" selected>Medium</option><option value="0.8">High</option><option value="0.65">Very High / Legacy</option></select></div>
+        <div class="input-card"><label>Regulatory Sensitivity</label><select id="regulatory" onchange="calculate()"><option value="1.05">Low</option><option value="0.95">Medium</option><option value="0.82" selected>High / Student PII</option><option value="0.7">Very High / PHI-like</option></select></div>
+        <div class="input-card"><label>Team AI Fluency</label><select id="fluency" onchange="calculate()"><option value="0.85">Low</option><option value="1" selected>Medium</option><option value="1.1">High</option></select></div>
+      </div>
+      <div class="insight" style="margin-top:14px;"><b>Rate assumption:</b> Onshore defaults to $200/hour ($1,600/day), offshore to $40/hour ($320/day), and hybrid to $120/hour ($960/day), assuming 8 working hours per day. These can be overridden when a project-specific commercial rate is known.</div>
+    </section>
+
+    <section class="grid-2" id="staffing" style="margin-top:18px;">
+      <div class="panel"><h2>2. Traditional Staffing Model</h2><table id="traditionalTable"></table></div>
+      <div class="panel"><h2>3. AI-Augmented Operating Model</h2><table id="aiStaffingTable"></table></div>
+    </section>
+
+    <section class="grid-2" id="impact">
+      <div class="panel"><h2>4. Workstream Impact Heatmap</h2><table id="workstreamTable"></table></div>
+      <div class="panel"><h2>5. Value Bridge</h2><div class="waterfall" id="waterfall"></div></div>
+    </section>
+
+    <section class="grid-3" id="horizon">
+      <div class="panel"><h2>1-Year View</h2><table id="year1Table"></table></div>
+      <div class="panel"><h2>3-Year View</h2><table id="year3Table"></table></div>
+      <div class="panel"><h2>5-Year View</h2><table id="year5Table"></table></div>
+    </section>
+
+    <section class="panel" id="insights">
+      <h2>6. Auto-Generated Insight Narrative</h2>
+      <div id="insightBox"></div>
+      <p class="footer-note" style="margin-top:14px;">Positioning language: Based on available RFP and sales inputs, the model estimates a directional AI-enabled productivity and cost-impact range. Assumptions should be validated during discovery before commercial commitment.</p>
+    </section>
+  </main>
+</div>
+<script>
+const defaults = {sourceSystems:6, domains:4, dashboards:12, buildMonths:6, hoursPerDay:8, rateModel:'Hybrid'};
+const hourlyRateDefaults = {Onshore:200, Offshore:40, Hybrid:120};
+const scenarioFactors = {Conservative:0.75, Realistic:1.0, Aggressive:1.18};
+const activityModel = [
+  {workstream:'Data lake / platform engineering', buildBase:3.2, runBase:.30, genai:.55, agentic:.25, role:'Data Engineer'},
+  {workstream:'Integration and source onboarding', buildBase:2.8, runBase:.24, genai:.48, agentic:.35, role:'Integration Engineer'},
+  {workstream:'Data quality rules and validation', buildBase:1.6, runBase:.22, genai:.62, agentic:.50, role:'DQ Analyst'},
+  {workstream:'MDM / entity resolution', buildBase:2.4, runBase:.18, genai:.35, agentic:.32, role:'MDM Specialist'},
+  {workstream:'Governance, catalog and lineage', buildBase:1.4, runBase:.14, genai:.68, agentic:.42, role:'Governance Analyst'},
+  {workstream:'BI semantic layer and dashboards', buildBase:2.1, runBase:.12, genai:.45, agentic:.24, role:'BI Developer'},
+  {workstream:'Testing, regression and release', buildBase:1.3, runBase:.10, genai:.55, agentic:.55, role:'QA / Release Lead'},
+  {workstream:'BAU monitoring and incident triage', buildBase:.4, runBase:.28, genai:.25, agentic:.58, role:'L2/L3 Support'}
+];
+const roleModel = [
+  {role:'Principal / Engagement Lead', buildPct:.06, runPct:.03, shift:'Govern value case, assumptions, outcomes'},
+  {role:'Solution / Data Architect', buildPct:.14, runPct:.06, shift:'Pattern ownership and AI output validation'},
+  {role:'Data Engineers', buildPct:.30, runPct:.18, shift:'From manual build to reusable patterns and exception engineering'},
+  {role:'DQ / MDM / Governance SMEs', buildPct:.20, runPct:.20, shift:'From manual rules to review, stewardship and approval'},
+  {role:'QA / Test Engineers', buildPct:.12, runPct:.08, shift:'From manual scripts to autonomous regression supervision'},
+  {role:'BI / Analytics Developers', buildPct:.10, runPct:.05, shift:'From manual dashboarding to semantic layer refinement'},
+  {role:'DevOps / Platform Admin', buildPct:.08, runPct:.15, shift:'From setup and ops to automated observability guardrails'},
+  {role:'L2/L3 Support', buildPct:0, runPct:.25, shift:'From ticket handling to agent supervision and exception handling'}
+];
+function val(id){ return document.getElementById(id).value; }
+function num(id, fallback){ const v = parseFloat(val(id)); return isNaN(v) || v===0 ? fallback : v; }
+function fmt(n){ return '$' + Math.round(n).toLocaleString(); }
+function pct(n){ return Math.round(n*100) + '%'; }
+function setHtml(id, html){ document.getElementById(id).innerHTML = html; }
+function assumedHint(id, isUser, used){ setHtml(id, isUser ? `<span class="user">User input</span>` : `<span class="assumed">Assumed: ${used}</span>`); }
+function getDefaultHourlyRate(){
+  const model = val('rateModel') || defaults.rateModel;
+  return hourlyRateDefaults[model] || hourlyRateDefaults.Hybrid;
+}
+function setCustomRate(){
+  const model = val('rateModel');
+  const typed = val('hourlyRate') !== '';
+  if(typed && hourlyRateDefaults[model] !== parseFloat(val('hourlyRate'))) document.getElementById('rateModel').value='Custom';
+}
+function syncRateModel(force){
+  const model = val('rateModel') || defaults.rateModel;
+  if(model !== 'Custom' && (force || val('hourlyRate') === '')){
+    document.getElementById('hourlyRate').value = hourlyRateDefaults[model];
+  }
+  calculate();
+}
+function calculate(){
+  const assumptionMode = document.getElementById('assumptionMode').checked;
+  const opp = val('opportunityName') || 'Sample Opportunity';
+  const segment = val('segment'); const scope = val('scope'); const scenario = val('scenario');
+  const sourcesUser = val('sourceSystems') !== ''; const sources = num('sourceSystems', defaults.sourceSystems);
+  const domainsUser = val('domains') !== ''; const domains = num('domains', defaults.domains);
+  const pipeDefault = Math.max(6, sources * 3); const pipeUser = val('pipelines') !== ''; const pipelines = num('pipelines', pipeDefault);
+  const dashUser = val('dashboards') !== ''; const dashboards = num('dashboards', defaults.dashboards);
+  const buildUser = val('buildMonths') !== ''; const buildMonths = num('buildMonths', defaults.buildMonths);
+  const rateModel = val('rateModel') || defaults.rateModel;
+  const hourlyUser = val('hourlyRate') !== '';
+  const hourlyRate = num('hourlyRate', getDefaultHourlyRate());
+  const hoursUser = val('hoursPerDay') !== '';
+  const hoursPerDay = num('hoursPerDay', defaults.hoursPerDay);
+  const dayRate = hourlyRate * hoursPerDay;
+  document.getElementById('dayRate').value = Math.round(dayRate);
+  const maturity = parseFloat(val('maturity')); const complexity = parseFloat(val('complexity')); const regulatory = parseFloat(val('regulatory')); const fluency = parseFloat(val('fluency'));
+  const scenarioFactor = scenarioFactors[scenario];
+  const rateUser = hourlyUser || rateModel !== defaults.rateModel || hoursUser;
+  const unknownCount = [sourcesUser,domainsUser,pipeUser,dashUser,buildUser,rateUser,val('aiCost')!==''].filter(x=>!x).length;
+  const assumptionDependency = unknownCount <= 1 ? 'Low' : unknownCount <= 3 ? 'Medium' : 'High';
+  const adj = scenarioFactor * maturity * complexity * regulatory * fluency;
+  const scale = (pipelines * .65) + (dashboards * .25) + (domains * 2.0) + (sources * 1.2);
+  let buildBase=0, buildAI=0, runBaseMonthly=0, runAIMonthly=0;
+  let rows=[];
+  activityModel.forEach(a=>{
+    const volume = a.workstream.includes('BI') ? dashboards : a.workstream.includes('Governance') ? domains*2 : a.workstream.includes('MDM') ? domains : pipelines;
+    const baseBuild = a.buildBase * volume;
+    const baseRun = a.runBase * volume;
+    const savingBuild = Math.min(.78, Math.max(.05, a.genai * adj));
+    const savingRun = Math.min(.72, Math.max(.04, a.agentic * adj));
+    const aiBuild = baseBuild * (1-savingBuild);
+    const aiRun = baseRun * (1-savingRun);
+    buildBase += baseBuild; buildAI += aiBuild; runBaseMonthly += baseRun; runAIMonthly += aiRun;
+    rows.push({workstream:a.workstream, role:a.role, baseBuild, aiBuild, buildSave:savingBuild, baseRun, aiRun, runSave:savingRun});
+  });
+  const buildSaved = buildBase - buildAI; const runSavedMonthly = runBaseMonthly - runAIMonthly;
+  const aiCostDefault = Math.max(60000, (buildBase*dayRate*.08) + (runBaseMonthly*12*dayRate*.06));
+  const aiCost = num('aiCost', aiCostDefault);
+  const year = (yrs)=>({
+    gross: buildSaved*dayRate + runSavedMonthly*12*yrs*dayRate,
+    ai: aiCost*yrs,
+    net: buildSaved*dayRate + runSavedMonthly*12*yrs*dayRate - aiCost*yrs,
+    baseline: buildBase*dayRate + runBaseMonthly*12*yrs*dayRate
+  });
+  const y1=year(1), y3=year(3), y5=year(5);
+  const buildPct = buildSaved/buildBase; const runPct = runSavedMonthly/runBaseMonthly;
+  document.getElementById('profileOpportunity').textContent = opp;
+  document.getElementById('profileSegment').textContent = segment;
+  document.getElementById('profileScenario').textContent = scenario;
+  document.getElementById('assumptionDependency').textContent = assumptionDependency;
+  setHtml('kpi1y', fmt(y1.net)); setHtml('kpi3y', fmt(y3.net)); setHtml('kpi5y', fmt(y5.net)); setHtml('kpiBuildPct', pct(buildPct)); setHtml('kpiRunPct', pct(runPct));
+  assumedHint('srcHint', sourcesUser, sources); assumedHint('domainHint', domainsUser, domains); assumedHint('pipeHint', pipeUser, pipelines); assumedHint('dashHint', dashUser, dashboards); assumedHint('buildHint', buildUser, buildMonths + ' months'); assumedHint('hourlyRateHint', hourlyUser || rateModel !== defaults.rateModel, '$' + hourlyRate + '/hr'); assumedHint('hoursHint', hoursUser, hoursPerDay + ' hrs/day'); setHtml('rateHint', `<span class="assumed">${rateModel} model: $${hourlyRate}/hr × ${hoursPerDay} hrs/day = ${fmt(dayRate)}/day</span>`); assumedHint('aiHint', val('aiCost')!=='', fmt(aiCost));
+  renderTables(rows, roleModel, {buildBase,buildAI,runBaseMonthly,runAIMonthly,buildSaved,runSavedMonthly,dayRate,hourlyRate,hoursPerDay,rateModel,aiCost,y1,y3,y5,buildPct,runPct,scenario,assumptionDependency,segment,scope,opp});
+  window.currentModel = {inputs:{opp,segment,scope,scenario,sources,domains,pipelines,dashboards,buildMonths,rateModel,hourlyRate,hoursPerDay,dayRate,aiCost,assumptionDependency}, rows, roleModel, metrics:{buildBase,buildAI,runBaseMonthly,runAIMonthly,buildSaved,runSavedMonthly,buildPct,runPct,y1,y3,y5}};
+}
+function renderTables(rows, roles, m){
+  setHtml('workstreamTable', `<tr><th>Workstream</th><th>Lead Role</th><th>Build Saving</th><th>Run Saving</th><th>AI Leverage</th></tr>` + rows.map(r=>`<tr><td>${r.workstream}</td><td>${r.role}</td><td>${pct(r.buildSave)}</td><td>${pct(r.runSave)}</td><td><div class="bar-wrap"><div class="bar" style="width:${Math.round((r.buildSave+r.runSave)/2*100)}%"></div></div></td></tr>`).join(''));
+  setHtml('traditionalTable', `<tr><th>Role</th><th>Build Effort</th><th>Run Effort</th><th>Traditional role shape</th></tr>` + roles.map(r=>`<tr><td>${r.role}</td><td>${Math.round(r.buildPct*m.buildBase)} p-days</td><td>${Math.round(r.runPct*m.runBaseMonthly)} p-days/mo</td><td>Manual delivery, review and escalation load</td></tr>`).join(''));
+  setHtml('aiStaffingTable', `<tr><th>Role</th><th>AI-Augmented Effort</th><th>Role Shift</th></tr>` + roles.map(r=>`<tr><td>${r.role}</td><td>${Math.round((r.buildPct*m.buildAI)+(r.runPct*m.runAIMonthly))} p-days equivalent</td><td>${r.shift}</td></tr>`).join(''));
+  const smallTable = (y)=>`<tr><td>Gross savings</td><td>${fmt(y.gross)}</td></tr><tr><td>AI enablement cost</td><td>${fmt(y.ai)}</td></tr><tr><td>Net savings</td><td><b>${fmt(y.net)}</b></td></tr><tr><td>ROI</td><td>${(y.net/y.ai).toFixed(1)}x</td></tr>`;
+  setHtml('year1Table', smallTable(m.y1)); setHtml('year3Table', smallTable(m.y3)); setHtml('year5Table', smallTable(m.y5));
+  const max = Math.max(m.buildSaved*m.dayRate, m.runSavedMonthly*12*m.dayRate, m.aiCost, m.y1.net);
+  const wf = [
+    ['Build savings', m.buildSaved*m.dayRate, ''], ['Run savings', m.runSavedMonthly*12*m.dayRate, ''], ['AI cost', m.aiCost, 'cost'], ['Net year 1', m.y1.net, '']
+  ];
+  setHtml('waterfall', wf.map(x=>`<div class="wf-item"><div class="wf-value">${fmt(x[1])}</div><div class="wf-bar ${x[2]}" style="height:${Math.max(12,Math.min(180,Math.abs(x[1])/max*180))}px"></div><div class="wf-label">${x[0]}</div></div>`).join(''));
+  const runDominates = (m.runSavedMonthly*12*3*m.dayRate) > (m.buildSaved*m.dayRate);
+  const topWs = [...rows].sort((a,b)=>((b.baseBuild-b.aiBuild)+(b.baseRun-b.aiRun)*12)-((a.baseBuild-a.aiBuild)+(a.baseRun-a.aiRun)*12))[0];
+  setHtml('insightBox', `
+    <div class="insight"><b>Value story:</b> In the ${m.scenario.toLowerCase()} scenario, the opportunity shows ${pct(m.buildPct)} one-time build productivity and ${pct(m.runPct)} recurring run productivity, with ${fmt(m.y3.net)} net cumulative savings over three years.</div>
+    <div class="insight"><b>Operating model shift:</b> The model moves effort away from manual artifact production and ticket handling toward architecture, validation, governance, and exception-based supervision of AI agents.</div>
+    <div class="insight"><b>Largest lever:</b> ${topWs.workstream} is currently the strongest savings contributor because it combines repeatable work, volume, and high AI leverage.</div>
+    <div class="insight"><b>Commercial posture:</b> Assumption dependency is ${m.assumptionDependency.toLowerCase()}. Use the output as a directional value case until high-impact inputs such as source count, pipeline volume, support model, and AI maturity are validated.</div>
+    <div class="insight"><b>Multi-year message:</b> ${runDominates ? 'By year 3, run-phase compounding becomes the stronger value driver than build acceleration.' : 'Build acceleration remains a major value lever, but run-phase savings should be validated because it can materially improve the five-year case.'}</div>
+  `);
+}
+function resetInputs(){ ['opportunityName','sourceSystems','domains','pipelines','dashboards','buildMonths','hourlyRate','hoursPerDay','aiCost'].forEach(id=>document.getElementById(id).value=''); document.getElementById('rateModel').value='Hybrid'; document.getElementById('scenario').value='Realistic'; syncRateModel(true); }
+function rowsToSheet(rows){ return XLSX.utils.json_to_sheet(rows); }
+function downloadExcel(){
+  const m = window.currentModel; if(!m){ calculate(); }
+  const model = window.currentModel;
+  const wb = XLSX.utils.book_new();
+  const summary = [
+    {Metric:'Opportunity', Value:model.inputs.opp}, {Metric:'Segment', Value:model.inputs.segment}, {Metric:'Scope', Value:model.inputs.scope}, {Metric:'Scenario', Value:model.inputs.scenario},
+    {Metric:'Assumption dependency', Value:model.inputs.assumptionDependency}, {Metric:'1Y Net Savings', Value:Math.round(model.metrics.y1.net)}, {Metric:'3Y Net Savings', Value:Math.round(model.metrics.y3.net)}, {Metric:'5Y Net Savings', Value:Math.round(model.metrics.y5.net)},
+    {Metric:'Build effort saved %', Value:model.metrics.buildPct}, {Metric:'Run effort saved %', Value:model.metrics.runPct}
+  ];
+  const inputRows = Object.entries(model.inputs).map(([k,v])=>({Input:k, EffectiveValue:v, Mode: ['sources','domains','pipelines','dashboards','buildMonths','rateModel','hourlyRate','hoursPerDay','dayRate','aiCost'].includes(k) ? 'User or default assumption' : 'Selected'}));
+  const impactRows = model.rows.map(r=>({Workstream:r.workstream, LeadRole:r.role, TraditionalBuildPD:r.baseBuild, AIAugmentedBuildPD:r.aiBuild, BuildSavingPct:r.buildSave, TraditionalRunPDMonthly:r.baseRun, AIAugmentedRunPDMonthly:r.aiRun, RunSavingPct:r.runSave}));
+  const staffingRows = model.roleModel.map(r=>({Role:r.role, TraditionalBuildPct:r.buildPct, TraditionalRunPct:r.runPct, AIAugmentedRoleShift:r.shift}));
+  const horizonRows = [
+    {Horizon:'1Y', GrossSavings:model.metrics.y1.gross, AICost:model.metrics.y1.ai, NetSavings:model.metrics.y1.net, ROI:model.metrics.y1.net/model.metrics.y1.ai},
+    {Horizon:'3Y', GrossSavings:model.metrics.y3.gross, AICost:model.metrics.y3.ai, NetSavings:model.metrics.y3.net, ROI:model.metrics.y3.net/model.metrics.y3.ai},
+    {Horizon:'5Y', GrossSavings:model.metrics.y5.gross, AICost:model.metrics.y5.ai, NetSavings:model.metrics.y5.net, ROI:model.metrics.y5.net/model.metrics.y5.ai}
+  ];
+  XLSX.utils.book_append_sheet(wb, rowsToSheet(summary), 'Executive Summary');
+  XLSX.utils.book_append_sheet(wb, rowsToSheet(inputRows), 'Input Console');
+  XLSX.utils.book_append_sheet(wb, rowsToSheet(impactRows), 'Workstream Impact');
+  XLSX.utils.book_append_sheet(wb, rowsToSheet(staffingRows), 'Staffing Model');
+  XLSX.utils.book_append_sheet(wb, rowsToSheet(horizonRows), '1Y 3Y 5Y Value');
+  const safeName = (model.inputs.opp || 'Education_AI_Value_Simulator').replace(/[^a-z0-9]/gi,'_').slice(0,45);
+  XLSX.writeFile(wb, `${safeName}_AI_Value_Simulator.xlsx`);
+}
+syncRateModel(true);
+</script>
+</body>
+</html>
